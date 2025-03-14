@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import axios from "axios";
+import crypto from "crypto";
 
 dotenv.config();
 
@@ -16,8 +17,8 @@ app.use(express.json());
 // version: `v<count>.<node>.<key>`
 const store = {};
 const NODE_IDENTIFIER = process.env.NODE_IDENTIFIER;
-// each node objects in the list: {"address": string, "id": int}
-let currentView = [];
+let currentShards = {};
+let myShard = null;
 
 // --------------------
 // HELPER FUNCTIONS
@@ -39,6 +40,15 @@ const checkOnline = (req, res, next) => {
  * all endpoints under /data require that the node is online
  */
 app.use("/data", checkOnline);
+
+const getShardForKey = (key) => {
+  const shards = Object.keys(currentShards).sort();
+  if (shards.length == 0) return null;
+  const hashHex = crypto.createHash("sha256").update(key).digest("hex");
+  const hashInt = BigInt("0x" + hashHex);
+  const index = Number(hashInt % BigInt(shards.length));
+  return shards[index];
+};
 
 const compareClocks = (clockA, clockB) => {
   let aBigger = false;
@@ -77,7 +87,8 @@ const clockSatisfied = (clientClock, storeClock) => {
 };
 
 const replicateToOthers = async (replicationData) => {
-  const others = currentView.filter(
+  const myShardNodes = currentShards[myShard] || [];
+  const others = myShardNodes.filter(
     (node) => String(node.id) !== String(NODE_IDENTIFIER)
   );
 
@@ -111,12 +122,8 @@ const buildGlobalMetadata = () => {
 const mergeGlobalMetadata = (clientMeta) => {
   for (const [key, clientClock] of Object.entries(clientMeta)) {
     if (!store.hasOwnProperty(key)) {
-      // We could create a placeholder if we want, but typically we ignore keys we haven't seen
-      // Or create a placeholder if your design calls for it:
-      // store[key] = { value: null, version: "", clock: { ...clientClock } };
       continue;
     }
-    // Merge the client's clock for this key
     store[key].clock = mergeClocks(store[key].clock, clientClock);
   }
 };
@@ -134,7 +141,8 @@ const globalDependencies = () => {
 };
 
 const syncKeyFromPeers = async (key) => {
-  const others = currentView.filter(
+  const myShardNodes = currentShards[myShard] || [];
+  const others = myShardNodes.filter(
     (node) => String(node.id) !== String(NODE_IDENTIFIER)
   );
   for (const node of others) {
@@ -168,7 +176,7 @@ const syncKeyFromPeers = async (key) => {
 const parseVersion = (version) => {
   const parts = version.split(".");
   if (parts.length < 3) return null;
-  const countStr = parts[0].substring(1); // remove the leading 'v'
+  const countStr = parts[0].substring(1);
   return { count: parseInt(countStr, 10), node: parts[1] };
 };
 
@@ -202,16 +210,41 @@ app.get("/ping", (req, res) => {
 
 /**
  * PUT /view
- * update the view of cluster
- * merge store and localClock from the og node
+ * update the view of cluster and performing resharding
  */
 app.put("/view", async (req, res) => {
   if (!req.body || !req.body.view || !Array.isArray(req.body.view)) {
     return res.status(400).json({ error: "Invalid view format" });
   }
-  currentView = req.body.view;
+  currentShards = req.body.view;
 
-  const allowedNodes = new Set(currentView.map((node) => String(node.id)));
+  myShard = null;
+  for (const [shard, nodes] of Object.entries(currentShards)) {
+    if (nodes.some((node) => String(node.id) === NODE_IDENTIFIER)) {
+      myShard = shard;
+      break;
+    }
+  }
+  if (!myShard) {
+    return res
+      .status(400)
+      .json({ error: "Current node is not in any shard in the view" });
+  }
+
+  for (const key in store) {
+    const responsibleShard = getShardForKey(key);
+    if (responsibleShard !== myShard) {
+      console.log(
+        `Removing key ${key} from shard ${myShard} as it belongs to shard ${responsibleShard}`
+      );
+      delete store[key];
+    }
+  }
+
+  const myShardNodes = currentShards[myShard].filter(
+    (node) => String(node.id) !== NODE_IDENTIFIER
+  );
+  const allowedNodes = new Set(myShardNodes.map((node) => String(node.id)));
   for (const key in store) {
     const keyClock = store[key].clock;
     for (const nodeId in keyClock) {
@@ -231,7 +264,7 @@ app.put("/view", async (req, res) => {
    *    1-1-2. merge each key from remote store
    *    1-1-3. break if sync w/ one node is successful
    */
-  for (const node of currentView) {
+  for (const node of myShardNodes) {
     if (String(node.id) != NODE_IDENTIFIER) {
       const url = `http://${node.address}/internal/sync`;
       try {
@@ -294,6 +327,24 @@ app.get("/data", (req, res) => {
  */
 app.get("/data/:key", async (req, res) => {
   const key = req.params.key;
+  const targetShard = getShardForKey(key);
+  if (targetShard != myShard) {
+    const nodes = currentShards[targetShard];
+    if (!nodes || nodes.length === 0) {
+      return res.status(503).json({ error: "Target shard unavailable" });
+    }
+    const targetNode = nodes[0];
+    const url = `http://${targetNode.address}/data/${key}`;
+    try {
+      const response = await axios.get(url, { data: req.body, timeout: 5000 });
+      return res.status(response.status).json(response.data);
+    } catch (err) {
+      return res
+        .status(503)
+        .json({ error: "Failed to forward request to responsible shard" });
+    }
+  }
+
   const clientMetaRaw = req.body ? req.body["causal-metadata"] : undefined;
   const clientMetaProvided =
     clientMetaRaw != null && Object.keys(clientMetaRaw).length > 0;
@@ -347,14 +398,31 @@ app.get("/data/:key", async (req, res) => {
  * creates or updates the value of the key
  */
 app.put("/data/:key", async (req, res) => {
+  const key = req.params.key;
+  const targetShard = getShardForKey(key);
+  if (targetShard != myShard) {
+    const nodes = currentShards[targetShard];
+    if (!nodes || nodes.length === 0) {
+      return res.status(503).json({ error: "Target shard unavailable" });
+    }
+    const targetNode = nodes[0];
+    const url = `http://${targetNode.address}/data/${key}`;
+    try {
+      const response = await axios.put(url, req.body, { timeout: 5000 });
+      return res.status(response.status).json(response.data);
+    } catch (err) {
+      return res
+        .status(503)
+        .json({ error: "Failed to forward request to responsible shard" });
+    }
+  }
+
   const clientMeta = req.body ? req.body["causal-metadata"] || {} : {};
   mergeGlobalMetadata(clientMeta);
   if (!req.body || typeof req.body.value != "string") {
     return res.status(400).json({ error: `Invalid request body` });
   }
-  const key = req.params.key;
   const value = req.body.value;
-
   const isNewkey = !store.hasOwnProperty(key);
   if (!store[key]) {
     store[key] = { value: "", versions: [], clock: {}, deps: [] };
@@ -366,7 +434,6 @@ app.put("/data/:key", async (req, res) => {
   const newVersion = `v${store[key].clock[NODE_IDENTIFIER]}.${NODE_IDENTIFIER}.${key}`;
   store[key].versions.push(newVersion);
 
-  // try {
   await replicateToOthers({
     operation: "PUT",
     key,
@@ -375,11 +442,6 @@ app.put("/data/:key", async (req, res) => {
     clock: store[key].clock,
     deps: store[key].deps,
   });
-  // } catch (err) {
-  //   return res
-  //     .status(500)
-  //     .json({ error: `Replication to others failed: ${err.message}` });
-  // }
 
   return res.status(isNewkey ? 201 : 200).json({
     message: "Key store successfully",
@@ -393,24 +455,39 @@ app.put("/data/:key", async (req, res) => {
  * DOES NOT ENSURE causal consistency
  */
 app.delete("/data/:key", async (req, res) => {
+  const key = req.params.key;
+  const targetShard = getShardForKey(key);
+  if (targetShard != myShard) {
+    const nodes = currentShards[targetShard];
+    if (!nodes || nodes.length === 0) {
+      return res.status(503).json({ error: "Target shard unavailable" });
+    }
+    const targetNode = nodes[0];
+    const url = `http://${targetNode.address}/data/${key}`;
+    try {
+      const response = await axios.delete(url, {
+        data: req.body,
+        timeout: 5000,
+      });
+      return res.status(response.status).json(response.data);
+    } catch (err) {
+      return res
+        .status(503)
+        .json({ error: "Failed to forward request to responsible shard" });
+    }
+  }
+
   const clientMeta = req.body ? req.body["causal-metadata"] || {} : {};
   mergeGlobalMetadata(clientMeta);
-  const key = req.params.key;
 
   store[key].clock[NODE_IDENTIFIER] =
     (store[key].clock[NODE_IDENTIFIER] || 0) + 1;
 
-  // try {
   await replicateToOthers({
     operation: "DELETE",
     key,
     clock: store[key].clock,
   });
-  // } catch (err) {
-  //   return res
-  //     .status(500)
-  //     .json({ error: `Replication to others failed: ${err.message}` });
-  // }
 
   if (store.hasOwnProperty(key)) {
     delete store[key];

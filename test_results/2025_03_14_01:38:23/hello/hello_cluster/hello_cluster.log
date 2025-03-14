@@ -1,0 +1,70 @@
+Logs for test hello_cluster
+
+> SPAWN CLUSTER
+spawning cluster of 2 nodes
+$ docker network create kvs_0_net_base
+  starting container kvs_0_node_0 (ext_port=9000)
+$ docker run -d --name kvs_0_node_0 --env NODE_IDENTIFIER=0 -p 9000:8081 kvstore-hw3-test
+    attaching container kvs_0_node_0 to base network
+$ docker network connect kvs_0_net_base kvs_0_node_0
+    inspecting container kvs_0_node_0
+    container kvs_0_node_0 spawned, base_net_ip=192.168.97.2
+  starting container kvs_0_node_1 (ext_port=9001)
+$ docker run -d --name kvs_0_node_1 --env NODE_IDENTIFIER=1 -p 9001:8081 kvstore-hw3-test
+    attaching container kvs_0_node_1 to base network
+$ docker network connect kvs_0_net_base kvs_0_node_1
+    inspecting container kvs_0_node_1
+    container kvs_0_node_1 spawned, base_net_ip=192.168.97.3
+waiting for nodes to come online...
+  node kvs_0_node_0 online
+node kvs_0_node_1 is not online: ('Connection aborted.', ConnectionResetError(54, 'Connection reset by peer'))
+  node kvs_0_node_1 online
+all nodes online
+
+> CREATE PARTITIONS
+creating partition p0 with nodes [0]
+creating network kvs_0_net_p0
+  disconnecting nodes from other networks
+    disconnecting kvs_0_node_0 from network kvs_0_net_base
+  connecting nodes to partition network kvs_0_net_p0
+    connecting kvs_0_node_0 to network kvs_0_net_p0
+    node kvs_0_node_0 ip in network kvs_0_net_p0: 192.168.107.2
+creating partition p1 with nodes [1]
+creating network kvs_0_net_p1
+  disconnecting nodes from other networks
+    disconnecting kvs_0_node_1 from network kvs_0_net_base
+  connecting nodes to partition network kvs_0_net_p1
+    connecting kvs_0_node_1 to network kvs_0_net_p1
+    node kvs_0_node_1 ip in network kvs_0_net_p1: 192.168.117.2
+
+> DESCRIBE CLUSTER
+TOPOLOGY: group 0
+nodes:
+  kvs_0_node_0: 192.168.107.2:8081 <-> localhost:9000
+  kvs_0_node_1: 192.168.117.2:8081 <-> localhost:9001
+partitions:
+  p0: [0]
+  p1: [1]
+
+> TALK TO NODE 0
+  - node 0 is up at http://localhost:9000
+
+> TALK TO NODE 1
+  - node 1 is up at http://localhost:9001
+dumping logs of kvs containers
+Dumping logs for container kvs_0_node_1 to file /Users/chanwoopark/dev/ucsc/cse138/cse138_assignment4/test_results/2025_03_14_01:38:23/hello/hello_cluster/kvs_0_node_1.log
+Successfully wrote logs for container kvs_0_node_1 to /Users/chanwoopark/dev/ucsc/cse138/cse138_assignment4/test_results/2025_03_14_01:38:23/hello/hello_cluster/kvs_0_node_1.log
+Dumping logs for container kvs_0_node_0 to file /Users/chanwoopark/dev/ucsc/cse138/cse138_assignment4/test_results/2025_03_14_01:38:23/hello/hello_cluster/kvs_0_node_0.log
+Successfully wrote logs for container kvs_0_node_0 to /Users/chanwoopark/dev/ucsc/cse138/cse138_assignment4/test_results/2025_03_14_01:38:23/hello/hello_cluster/kvs_0_node_0.log
+
+> DESTROY CLUSTER
+cleaning up group 0
+  cleaning up group containers
+removing containers ['kvs_0_node_1', 'kvs_0_node_0']
+  cleaning up group networks
+removing network kvs_0_net_base
+removing network kvs_0_net_p0
+removing network kvs_0_net_p1
+
+
+✓ PASSED hello_cluster

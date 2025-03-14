@@ -1,0 +1,7 @@
+
+== TEST SUMMARY ==
+
+  - hello_cluster: ✓
+
+  - basic_kv_1: ✗
+
