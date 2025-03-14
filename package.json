@@ -2,6 +2,7 @@
   "name": "cse138_assignment4",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
