@@ -1,0 +1,6 @@
+[submodule "cse138-assignment-3-test-suite"]
+	path = cse138-assignment-3-test-suite
+	url = https://git.ucsc.edu/awaghili/cse138-assignment-3-test-suite
+[submodule "cse138-assignment-4-test-suite"]
+	path = cse138-assignment-4-test-suite
+	url = https://git.ucsc.edu/awaghili/cse138-assignment-4-test-suite
