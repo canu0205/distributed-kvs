@@ -1,0 +1,15 @@
+
+> cse138_assignment4@1.0.0 start
+> node index.js
+
+node is listening on port 8081
+Current node 2 is not in any shard in the view.
+Pruning key key12 because its clock contains dropped node 0
+Pruning key key14 because its clock contains dropped node 0
+Pruning key key0 because its clock contains dropped node 1
+Pruning key key2 because its clock contains dropped node 1
+Pruning key key3 because its clock contains dropped node 1
+Pruning key key5 because its clock contains dropped node 1
+Pruning key key9 because its clock contains dropped node 1
+Pruning key key10 because its clock contains dropped node 1
+Pruning key key11 because its clock contains dropped node 1

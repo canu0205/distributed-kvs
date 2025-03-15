@@ -1,0 +1,6 @@
+
+> cse138_assignment4@1.0.0 start
+> node index.js
+
+node is listening on port 8081
+Current node 2 is not in any shard in the view.
