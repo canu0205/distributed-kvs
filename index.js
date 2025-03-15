@@ -25,8 +25,7 @@ let myShard = null;
 // --------------------
 
 const isOnline = () => {
-  if (currentView.length == 0) return false;
-  return currentView.some((node) => String(node.id) == NODE_IDENTIFIER);
+  return myShard != null;
 };
 
 const checkOnline = (req, res, next) => {
@@ -196,6 +195,25 @@ const isSameCount = (clockA, clockB) => {
   const sumB = Object.values(clockB).reduce((acc, val) => acc + val, 0);
   return sumA == sumB;
 };
+
+const replicateToShard = async (targetShard, replicationData) => {
+  const nodes = currentShards[targetShard];
+  if (!nodes || nodes.length === 0) {
+    console.error(
+      `No nodes available in shard ${targetShard} for cross-shard replication.`
+    );
+    return;
+  }
+  const targetNode = nodes[0]; // choose the first available node
+  const url = `http://${targetNode.address}/internal/replicate`;
+  try {
+    await axios.post(url, replicationData, { timeout: 5000 });
+  } catch (err) {
+    console.error(
+      `Failed to replicate key ${replicationData.key} to shard ${targetShard} at ${targetNode.address}: ${err.message}`
+    );
+  }
+};
 // --------------------
 // ENDPOINTS
 // --------------------
@@ -213,7 +231,7 @@ app.get("/ping", (req, res) => {
  * update the view of cluster and performing resharding
  */
 app.put("/view", async (req, res) => {
-  if (!req.body || !req.body.view || !Array.isArray(req.body.view)) {
+  if (!req.body || !req.body.view || typeof req.body.view !== "object") {
     return res.status(400).json({ error: "Invalid view format" });
   }
   currentShards = req.body.view;
@@ -226,16 +244,26 @@ app.put("/view", async (req, res) => {
     }
   }
   if (!myShard) {
-    return res
-      .status(400)
-      .json({ error: "Current node is not in any shard in the view" });
+    console.warn(
+      `Current node ${NODE_IDENTIFIER} is not in any shard in the view.`
+    );
+    return res.sendStatus(200);
   }
 
   for (const key in store) {
     const responsibleShard = getShardForKey(key);
     if (responsibleShard !== myShard) {
+      const replicationData = {
+        operation: "PUT",
+        key,
+        value: store[key].value,
+        versions: store[key].versions,
+        clock: store[key].clock,
+        deps: store[key].deps,
+      };
+      await replicateToShard(responsibleShard, replicationData);
       console.log(
-        `Removing key ${key} from shard ${myShard} as it belongs to shard ${responsibleShard}`
+        `Relocating key ${key} from shard ${myShard} to shard ${responsibleShard}`
       );
       delete store[key];
     }
@@ -400,7 +428,7 @@ app.get("/data/:key", async (req, res) => {
 app.put("/data/:key", async (req, res) => {
   const key = req.params.key;
   const targetShard = getShardForKey(key);
-  if (targetShard != myShard) {
+  if (targetShard !== myShard) {
     const nodes = currentShards[targetShard];
     if (!nodes || nodes.length === 0) {
       return res.status(503).json({ error: "Target shard unavailable" });
@@ -412,7 +440,7 @@ app.put("/data/:key", async (req, res) => {
       return res.status(response.status).json(response.data);
     } catch (err) {
       return res
-        .status(503)
+        .status(408)
         .json({ error: "Failed to forward request to responsible shard" });
     }
   }

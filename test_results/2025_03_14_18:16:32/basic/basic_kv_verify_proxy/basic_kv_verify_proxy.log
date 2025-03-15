@@ -1,0 +1,138 @@
+Logs for test basic_kv_verify_proxy
+
+> SPAWN CLUSTER
+spawning cluster of 4 nodes
+$ docker network create kvs_0_net_base
+  starting container kvs_0_node_0 (ext_port=9000)
+$ docker run -d --name kvs_0_node_0 --env NODE_IDENTIFIER=0 -p 9000:8081 kvstore-hw3-test
+    attaching container kvs_0_node_0 to base network
+$ docker network connect kvs_0_net_base kvs_0_node_0
+    inspecting container kvs_0_node_0
+    container kvs_0_node_0 spawned, base_net_ip=192.168.97.2
+  starting container kvs_0_node_1 (ext_port=9001)
+$ docker run -d --name kvs_0_node_1 --env NODE_IDENTIFIER=1 -p 9001:8081 kvstore-hw3-test
+    attaching container kvs_0_node_1 to base network
+$ docker network connect kvs_0_net_base kvs_0_node_1
+    inspecting container kvs_0_node_1
+    container kvs_0_node_1 spawned, base_net_ip=192.168.97.3
+  starting container kvs_0_node_2 (ext_port=9002)
+$ docker run -d --name kvs_0_node_2 --env NODE_IDENTIFIER=2 -p 9002:8081 kvstore-hw3-test
+    attaching container kvs_0_node_2 to base network
+$ docker network connect kvs_0_net_base kvs_0_node_2
+    inspecting container kvs_0_node_2
+    container kvs_0_node_2 spawned, base_net_ip=192.168.97.4
+  starting container kvs_0_node_3 (ext_port=9003)
+$ docker run -d --name kvs_0_node_3 --env NODE_IDENTIFIER=3 -p 9003:8081 kvstore-hw3-test
+    attaching container kvs_0_node_3 to base network
+$ docker network connect kvs_0_net_base kvs_0_node_3
+    inspecting container kvs_0_node_3
+    container kvs_0_node_3 spawned, base_net_ip=192.168.97.5
+waiting for nodes to come online...
+  node kvs_0_node_0 online
+  node kvs_0_node_1 online
+  node kvs_0_node_2 online
+node kvs_0_node_3 is not online: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+  node kvs_0_node_3 online
+all nodes online
+  - node 0 is up: OK
+  - node 1 is up: OK
+  - node 2 is up: OK
+  - node 3 is up: OK
+
+> SEND VIEW: {'shard1': [{'address': '192.168.97.2:8081', 'id': 0}, {'address': '192.168.97.3:8081', 'id': 1}], 'shard2': [{'address': '192.168.97.4:8081', 'id': 2}, {'address': '192.168.97.5:8081', 'id': 3}]}
+view sent to node 0: 200 OK
+view sent to node 1: 200 OK
+view sent to node 2: 200 OK
+view sent to node 3: 200 OK
+ c1 req_id:0 > 0 > kvs.put a <- 1
+ c1 req_id:0 {'message': 'Key store successfully', 'causal-metadata': {'a': {'2': 1}}}
+ c1 req_id:1 > 0 > kvs.put b <- 2
+ c1 req_id:1 {'message': 'Key store successfully', 'causal-metadata': {'a': {'2': 1}, 'b': {'2': 1}}}
+ c1 req_id:2 > 0 > kvs.put c <- 3
+ c1 req_id:2 {'message': 'Key store successfully', 'causal-metadata': {'c': {'0': 1}}}
+ c1 req_id:3 > 0 > kvs.put d <- 4
+ c1 req_id:3 {'message': 'Key store successfully', 'causal-metadata': {'c': {'0': 1}, 'd': {'0': 1}}}
+ c1 req_id:4 > 0 > kvs.put e <- 5
+ c1 req_id:4 {'message': 'Key store successfully', 'causal-metadata': {'c': {'0': 1}, 'd': {'0': 1}, 'e': {'0': 1}}}
+ c1 req_id:5 > 0 > kvs.put f <- 6
+ c1 req_id:5 {'message': 'Key store successfully', 'causal-metadata': {'a': {'2': 1}, 'b': {'2': 1}, 'f': {'2': 1}}}
+ c1 req_id:6 > 0 > kvs.put g <- 7
+ c1 req_id:6 {'message': 'Key store successfully', 'causal-metadata': {'a': {'2': 1}, 'b': {'2': 1}, 'f': {'2': 1}, 'g': {'2': 1}}}
+ c1 req_id:7 > 0 > kvs.put h <- 8
+ c1 req_id:7 {'message': 'Key store successfully', 'causal-metadata': {'a': {'2': 1}, 'b': {'2': 1}, 'f': {'2': 1}, 'g': {'2': 1}, 'h': {'2': 1}}}
+ c1 req_id:8 > 0 > kvs.put i <- 9
+ c1 req_id:8 {'message': 'Key store successfully', 'causal-metadata': {'a': {'2': 1}, 'b': {'2': 1}, 'f': {'2': 1}, 'g': {'2': 1}, 'h': {'2': 1}, 'i': {'2': 1}}}
+ c1 req_id:9 > 0 > kvs.put j <- 10
+ c1 req_id:9 {'message': 'Key store successfully', 'causal-metadata': {'a': {'2': 1}, 'b': {'2': 1}, 'f': {'2': 1}, 'g': {'2': 1}, 'h': {'2': 1}, 'i': {'2': 1}, 'j': {'2': 1}}}
+ c1 req_id:10 > 0 > kvs.put k <- 11
+ c1 req_id:10 {'message': 'Key store successfully', 'causal-metadata': {'c': {'0': 1}, 'd': {'0': 1}, 'e': {'0': 1}, 'k': {'0': 1}}}
+creating partition p0 with nodes [0, 1]
+creating network kvs_0_net_p0
+  disconnecting nodes from other networks
+    disconnecting kvs_0_node_0 from network kvs_0_net_base
+    disconnecting kvs_0_node_1 from network kvs_0_net_base
+  connecting nodes to partition network kvs_0_net_p0
+    connecting kvs_0_node_0 to network kvs_0_net_p0
+    node kvs_0_node_0 ip in network kvs_0_net_p0: 192.168.107.2
+    connecting kvs_0_node_1 to network kvs_0_net_p0
+    node kvs_0_node_1 ip in network kvs_0_net_p0: 192.168.107.3
+creating partition p1 with nodes [2, 3]
+creating network kvs_0_net_p1
+  disconnecting nodes from other networks
+    disconnecting kvs_0_node_2 from network kvs_0_net_base
+    disconnecting kvs_0_node_3 from network kvs_0_net_base
+  connecting nodes to partition network kvs_0_net_p1
+    connecting kvs_0_node_2 to network kvs_0_net_p1
+    node kvs_0_node_2 ip in network kvs_0_net_p1: 192.168.117.2
+    connecting kvs_0_node_3 to network kvs_0_net_p1
+    node kvs_0_node_3 ip in network kvs_0_net_p1: 192.168.117.3
+ c2 req_id:0 > 0> kvs.get_all request "causal-metadata": None
+ c2 req_id:0 > 0> kvs.get_all -> {'items': {'c': '3', 'd': '4', 'e': '5', 'k': '11'}, 'causal-metadata': {'c': {'0': 1}, 'd': {'0': 1}, 'e': {'0': 1}, 'k': {'0': 1}}}
+ c3 req_id:0 > 2> kvs.get_all request "causal-metadata": None
+ c3 req_id:0 > 2> kvs.get_all -> {'items': {'a': '1', 'b': '2', 'f': '6', 'g': '7', 'h': '8', 'i': '9', 'j': '10'}, 'causal-metadata': {'a': {'2': 1}, 'b': {'2': 1}, 'f': {'2': 1}, 'g': {'2': 1}, 'h': {'2': 1}, 'i': {'2': 1}, 'j': {'2': 1}}}
+ c4 req_id:0 > 0 > kvs.put a <- This should fail
+ c4 req_id:1 > 2 > kvs.put c <- This should also fail
+creating partition base with nodes [0, 1, 2, 3]
+  disconnecting nodes from other networks
+    disconnecting kvs_0_node_0 from network kvs_0_net_p0
+    disconnecting kvs_0_node_1 from network kvs_0_net_p0
+    disconnecting kvs_0_node_2 from network kvs_0_net_p1
+    disconnecting kvs_0_node_3 from network kvs_0_net_p1
+  connecting nodes to partition network kvs_0_net_base
+    connecting kvs_0_node_0 to network kvs_0_net_base
+    node kvs_0_node_0 ip in network kvs_0_net_base: 192.168.97.2
+    connecting kvs_0_node_1 to network kvs_0_net_base
+    node kvs_0_node_1 ip in network kvs_0_net_base: 192.168.97.3
+    connecting kvs_0_node_2 to network kvs_0_net_base
+    node kvs_0_node_2 ip in network kvs_0_net_base: 192.168.97.4
+    connecting kvs_0_node_3 to network kvs_0_net_base
+    node kvs_0_node_3 ip in network kvs_0_net_base: 192.168.97.5
+ c4 req_id:2 > 0 > kvs.put a <- This should work
+ c4 req_id:2 {'message': 'Key store successfully', 'causal-metadata': {'a': {'2': 2}, 'b': {'2': 1}, 'f': {'2': 1}, 'g': {'2': 1}, 'h': {'2': 1}, 'i': {'2': 1}, 'j': {'2': 1}}}
+ c4 req_id:3 > 2 > kvs.put c <- This should also work
+ c4 req_id:3 {'message': 'Key store successfully', 'causal-metadata': {'c': {'0': 2}, 'd': {'0': 1}, 'e': {'0': 1}, 'k': {'0': 1}}}
+ c2 req_id:1 > 0> kvs.get_all request "causal-metadata": {'c': {'0': 1}, 'd': {'0': 1}, 'e': {'0': 1}, 'k': {'0': 1}}
+ c2 req_id:1 > 0> kvs.get_all -> {'items': {'c': 'This should also work', 'd': '4', 'e': '5', 'k': '11'}, 'causal-metadata': {'c': {'0': 2}, 'd': {'0': 1}, 'e': {'0': 1}, 'k': {'0': 1}}}
+ c3 req_id:1 > 2> kvs.get_all request "causal-metadata": {'a': {'2': 1}, 'b': {'2': 1}, 'f': {'2': 1}, 'g': {'2': 1}, 'h': {'2': 1}, 'i': {'2': 1}, 'j': {'2': 1}}
+ c3 req_id:1 > 2> kvs.get_all -> {'items': {'a': 'This should work', 'b': '2', 'f': '6', 'g': '7', 'h': '8', 'i': '9', 'j': '10'}, 'causal-metadata': {'a': {'2': 2}, 'b': {'2': 1}, 'f': {'2': 1}, 'g': {'2': 1}, 'h': {'2': 1}, 'i': {'2': 1}, 'j': {'2': 1}}}
+dumping logs of kvs containers
+Dumping logs for container kvs_0_node_3 to file /Users/chanwoopark/dev/ucsc/cse138/cse138_assignment4/test_results/2025_03_14_18:16:32/basic/basic_kv_verify_proxy/kvs_0_node_3.log
+Successfully wrote logs for container kvs_0_node_3 to /Users/chanwoopark/dev/ucsc/cse138/cse138_assignment4/test_results/2025_03_14_18:16:32/basic/basic_kv_verify_proxy/kvs_0_node_3.log
+Dumping logs for container kvs_0_node_2 to file /Users/chanwoopark/dev/ucsc/cse138/cse138_assignment4/test_results/2025_03_14_18:16:32/basic/basic_kv_verify_proxy/kvs_0_node_2.log
+Successfully wrote logs for container kvs_0_node_2 to /Users/chanwoopark/dev/ucsc/cse138/cse138_assignment4/test_results/2025_03_14_18:16:32/basic/basic_kv_verify_proxy/kvs_0_node_2.log
+Dumping logs for container kvs_0_node_1 to file /Users/chanwoopark/dev/ucsc/cse138/cse138_assignment4/test_results/2025_03_14_18:16:32/basic/basic_kv_verify_proxy/kvs_0_node_1.log
+Successfully wrote logs for container kvs_0_node_1 to /Users/chanwoopark/dev/ucsc/cse138/cse138_assignment4/test_results/2025_03_14_18:16:32/basic/basic_kv_verify_proxy/kvs_0_node_1.log
+Dumping logs for container kvs_0_node_0 to file /Users/chanwoopark/dev/ucsc/cse138/cse138_assignment4/test_results/2025_03_14_18:16:32/basic/basic_kv_verify_proxy/kvs_0_node_0.log
+Successfully wrote logs for container kvs_0_node_0 to /Users/chanwoopark/dev/ucsc/cse138/cse138_assignment4/test_results/2025_03_14_18:16:32/basic/basic_kv_verify_proxy/kvs_0_node_0.log
+
+> DESTROY CLUSTER
+cleaning up group 0
+  cleaning up group containers
+removing containers ['kvs_0_node_3', 'kvs_0_node_2', 'kvs_0_node_1', 'kvs_0_node_0']
+  cleaning up group networks
+removing network kvs_0_net_base
+removing network kvs_0_net_p0
+removing network kvs_0_net_p1
+
+
+✓ PASSED basic_kv_verify_proxy

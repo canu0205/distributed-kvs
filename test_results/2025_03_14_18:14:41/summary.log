@@ -1,0 +1,15 @@
+
+== TEST SUMMARY ==
+
+  - hello_cluster: ✓
+
+  - basic_kv_1: ✓
+
+  - basic_kv_view_accept: ✓
+
+  - basic_proxy_one_client: ✓
+
+  - basic_proxy_many_clients: ✓
+
+  - basic_proxy_partitioned_shards: ✗
+

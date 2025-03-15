@@ -1,0 +1,16 @@
+
+> cse138_assignment4@1.0.0 start
+> node index.js
+
+node is listening on port 8081
+Relocating key key0 from shard shard2 to shard shard3
+Relocating key key2 from shard shard2 to shard shard3
+Relocating key key3 from shard shard2 to shard shard3
+Relocating key key5 from shard shard2 to shard shard3
+Relocating key key9 from shard shard2 to shard shard3
+Relocating key key10 from shard shard2 to shard shard3
+Relocating key key11 from shard shard2 to shard shard3
+Relocating key key13 from shard shard2 to shard shard1
+Pruning key key7 because its clock contains dropped node 1
+Pruning key key4 because its clock contains dropped node 0
+Pruning key key8 because its clock contains dropped node 0

@@ -1,0 +1,177 @@
+Logs for test basic_proxy_partitioned_shards
+
+> SPAWN CLUSTER
+spawning cluster of 4 nodes
+$ docker network create kvs_0_net_base
+  starting container kvs_0_node_0 (ext_port=9000)
+$ docker run -d --name kvs_0_node_0 --env NODE_IDENTIFIER=0 -p 9000:8081 kvstore-hw3-test
+    attaching container kvs_0_node_0 to base network
+$ docker network connect kvs_0_net_base kvs_0_node_0
+    inspecting container kvs_0_node_0
+    container kvs_0_node_0 spawned, base_net_ip=192.168.97.2
+  starting container kvs_0_node_1 (ext_port=9001)
+$ docker run -d --name kvs_0_node_1 --env NODE_IDENTIFIER=1 -p 9001:8081 kvstore-hw3-test
+    attaching container kvs_0_node_1 to base network
+$ docker network connect kvs_0_net_base kvs_0_node_1
+    inspecting container kvs_0_node_1
+    container kvs_0_node_1 spawned, base_net_ip=192.168.97.3
+  starting container kvs_0_node_2 (ext_port=9002)
+$ docker run -d --name kvs_0_node_2 --env NODE_IDENTIFIER=2 -p 9002:8081 kvstore-hw3-test
+    attaching container kvs_0_node_2 to base network
+$ docker network connect kvs_0_net_base kvs_0_node_2
+    inspecting container kvs_0_node_2
+    container kvs_0_node_2 spawned, base_net_ip=192.168.97.4
+  starting container kvs_0_node_3 (ext_port=9003)
+$ docker run -d --name kvs_0_node_3 --env NODE_IDENTIFIER=3 -p 9003:8081 kvstore-hw3-test
+    attaching container kvs_0_node_3 to base network
+$ docker network connect kvs_0_net_base kvs_0_node_3
+    inspecting container kvs_0_node_3
+    container kvs_0_node_3 spawned, base_net_ip=192.168.97.5
+waiting for nodes to come online...
+  node kvs_0_node_0 online
+  node kvs_0_node_1 online
+  node kvs_0_node_2 online
+node kvs_0_node_3 is not online: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+node kvs_0_node_3 is not online: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+  node kvs_0_node_3 online
+all nodes online
+  - node 0 is up: OK
+  - node 1 is up: OK
+  - node 2 is up: OK
+  - node 3 is up: OK
+creating partition secondshard with nodes [2, 3]
+creating network kvs_0_net_secondshard
+  disconnecting nodes from other networks
+    disconnecting kvs_0_node_2 from network kvs_0_net_base
+    disconnecting kvs_0_node_3 from network kvs_0_net_base
+  connecting nodes to partition network kvs_0_net_secondshard
+    connecting kvs_0_node_2 to network kvs_0_net_secondshard
+    node kvs_0_node_2 ip in network kvs_0_net_secondshard: 192.168.107.2
+    connecting kvs_0_node_3 to network kvs_0_net_secondshard
+    node kvs_0_node_3 ip in network kvs_0_net_secondshard: 192.168.107.3
+
+> SEND VIEW: {'shard1': [{'address': '192.168.97.2:8081', 'id': 0}, {'address': '192.168.97.3:8081', 'id': 1}], 'shard2': [{'address': '192.168.107.2:8081', 'id': 2}, {'address': '192.168.107.3:8081', 'id': 3}]}
+view sent to node 0: 200 OK
+view sent to node 1: 200 OK
+view sent to node 2: 200 OK
+view sent to node 3: 200 OK
+ client req_id:0 > 0 > kvs.put key0 <- 0
+ client req_id:0 {'message': 'Key store successfully', 'causal-metadata': {'key0': {'2': 1}}}
+ client req_id:1 > 1 > kvs.put key1 <- 1
+ client req_id:1 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}}}
+ client req_id:2 > 2 > kvs.put key2 <- 2
+ client req_id:2 {'message': 'Key store successfully', 'causal-metadata': {'key0': {'2': 1}, 'key2': {'2': 1}}}
+ client req_id:3 > 3 > kvs.put key3 <- 3
+ client req_id:3 {'message': 'Key store successfully', 'causal-metadata': {'key0': {'2': 1}, 'key2': {'2': 1}, 'key3': {'3': 1}}}
+ client req_id:4 > 0 > kvs.put key4 <- 4
+ client req_id:4 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}}}
+ client req_id:5 > 1 > kvs.put key5 <- 5
+ client req_id:5 {'message': 'Key store successfully', 'causal-metadata': {'key0': {'2': 1}, 'key2': {'2': 1}, 'key3': {'3': 1}, 'key5': {'2': 1}}}
+ client req_id:6 > 2 > kvs.put key6 <- 6
+ client req_id:6 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}, 'key6': {'0': 1}}}
+ client req_id:7 > 3 > kvs.put key7 <- 7
+ client req_id:7 {'message': 'Key store successfully', 'causal-metadata': {'key0': {'2': 1}, 'key2': {'2': 1}, 'key3': {'3': 1}, 'key5': {'2': 1}, 'key7': {'3': 1}}}
+ client req_id:8 > 0 > kvs.put key8 <- 8
+ client req_id:8 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}, 'key6': {'0': 1}, 'key8': {'0': 1}}}
+ client req_id:9 > 1 > kvs.put key9 <- 9
+ client req_id:9 {'message': 'Key store successfully', 'causal-metadata': {'key0': {'2': 1}, 'key2': {'2': 1}, 'key3': {'3': 1}, 'key5': {'2': 1}, 'key7': {'3': 1}, 'key9': {'2': 1}}}
+ client req_id:10 > 2 > kvs.put key10 <- 10
+ client req_id:10 {'message': 'Key store successfully', 'causal-metadata': {'key0': {'2': 1}, 'key2': {'2': 1}, 'key3': {'3': 1}, 'key5': {'2': 1}, 'key7': {'3': 1}, 'key9': {'2': 1}, 'key10': {'2': 1}}}
+ client req_id:11 > 3 > kvs.put key11 <- 11
+ client req_id:11 {'message': 'Key store successfully', 'causal-metadata': {'key0': {'2': 1}, 'key2': {'2': 1}, 'key3': {'3': 1}, 'key5': {'2': 1}, 'key7': {'3': 1}, 'key9': {'2': 1}, 'key10': {'2': 1}, 'key11': {'3': 1}}}
+ client req_id:12 > 0 > kvs.put key12 <- 12
+ client req_id:12 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}, 'key6': {'0': 1}, 'key8': {'0': 1}, 'key12': {'0': 1}}}
+ client req_id:13 > 1 > kvs.put key13 <- 13
+ client req_id:13 {'message': 'Key store successfully', 'causal-metadata': {'key0': {'2': 1}, 'key2': {'2': 1}, 'key3': {'3': 1}, 'key5': {'2': 1}, 'key7': {'3': 1}, 'key9': {'2': 1}, 'key10': {'2': 1}, 'key11': {'3': 1}, 'key13': {'2': 1}}}
+ client req_id:14 > 2 > kvs.put key14 <- 14
+ client req_id:14 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}, 'key6': {'0': 1}, 'key8': {'0': 1}, 'key12': {'0': 1}, 'key14': {'0': 1}}}
+ client req_id:15 > 3 > kvs.put key15 <- 15
+ client req_id:15 {'message': 'Key store successfully', 'causal-metadata': {'key0': {'2': 1}, 'key2': {'2': 1}, 'key3': {'3': 1}, 'key5': {'2': 1}, 'key7': {'3': 1}, 'key9': {'2': 1}, 'key10': {'2': 1}, 'key11': {'3': 1}, 'key13': {'2': 1}, 'key15': {'3': 1}}}
+ client req_id:16 > 0 > kvs.put key16 <- 16
+ client req_id:16 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}, 'key6': {'0': 1}, 'key8': {'0': 1}, 'key12': {'0': 1}, 'key14': {'0': 1}, 'key16': {'0': 1}}}
+ client req_id:17 > 1 > kvs.put key17 <- 17
+ client req_id:17 {'message': 'Key store successfully', 'causal-metadata': {'key0': {'2': 1}, 'key2': {'2': 1}, 'key3': {'3': 1}, 'key5': {'2': 1}, 'key7': {'3': 1}, 'key9': {'2': 1}, 'key10': {'2': 1}, 'key11': {'3': 1}, 'key13': {'2': 1}, 'key15': {'3': 1}, 'key17': {'2': 1}}}
+ client req_id:18 > 2 > kvs.put key18 <- 18
+ client req_id:18 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}, 'key6': {'0': 1}, 'key8': {'0': 1}, 'key12': {'0': 1}, 'key14': {'0': 1}, 'key16': {'0': 1}, 'key18': {'0': 1}}}
+ client req_id:19 > 3 > kvs.put key19 <- 19
+ client req_id:19 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}, 'key6': {'0': 1}, 'key8': {'0': 1}, 'key12': {'0': 1}, 'key14': {'0': 1}, 'key16': {'0': 1}, 'key18': {'0': 1}, 'key19': {'0': 1}}}
+ client req_id:20 > 0 > kvs.put key20 <- 20
+ client req_id:20 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}, 'key6': {'0': 1}, 'key8': {'0': 1}, 'key12': {'0': 1}, 'key14': {'0': 1}, 'key16': {'0': 1}, 'key18': {'0': 1}, 'key19': {'0': 1}, 'key20': {'0': 1}}}
+ client req_id:21 > 1 > kvs.put key21 <- 21
+ client req_id:21 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}, 'key6': {'0': 1}, 'key8': {'0': 1}, 'key12': {'0': 1}, 'key14': {'0': 1}, 'key16': {'0': 1}, 'key18': {'0': 1}, 'key19': {'0': 1}, 'key20': {'0': 1}, 'key21': {'1': 1}}}
+ client req_id:22 > 2 > kvs.put key22 <- 22
+ client req_id:22 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}, 'key6': {'0': 1}, 'key8': {'0': 1}, 'key12': {'0': 1}, 'key14': {'0': 1}, 'key16': {'0': 1}, 'key18': {'0': 1}, 'key19': {'0': 1}, 'key20': {'0': 1}, 'key21': {'1': 1}, 'key22': {'0': 1}}}
+ client req_id:23 > 3 > kvs.put key23 <- 23
+ client req_id:23 {'message': 'Key store successfully', 'causal-metadata': {'key0': {'2': 1}, 'key2': {'2': 1}, 'key3': {'3': 1}, 'key5': {'2': 1}, 'key7': {'3': 1}, 'key9': {'2': 1}, 'key10': {'2': 1}, 'key11': {'3': 1}, 'key13': {'2': 1}, 'key15': {'3': 1}, 'key17': {'2': 1}, 'key23': {'3': 1}}}
+ client req_id:24 > 0 > kvs.put key24 <- 24
+ client req_id:24 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}, 'key6': {'0': 1}, 'key8': {'0': 1}, 'key12': {'0': 1}, 'key14': {'0': 1}, 'key16': {'0': 1}, 'key18': {'0': 1}, 'key19': {'0': 1}, 'key20': {'0': 1}, 'key21': {'1': 1}, 'key22': {'0': 1}, 'key24': {'0': 1}}}
+ client req_id:25 > 1 > kvs.put key25 <- 25
+ client req_id:25 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}, 'key6': {'0': 1}, 'key8': {'0': 1}, 'key12': {'0': 1}, 'key14': {'0': 1}, 'key16': {'0': 1}, 'key18': {'0': 1}, 'key19': {'0': 1}, 'key20': {'0': 1}, 'key21': {'1': 1}, 'key22': {'0': 1}, 'key24': {'0': 1}, 'key25': {'1': 1}}}
+ client req_id:26 > 2 > kvs.put key26 <- 26
+ client req_id:26 {'message': 'Key store successfully', 'causal-metadata': {'key0': {'2': 1}, 'key2': {'2': 1}, 'key3': {'3': 1}, 'key5': {'2': 1}, 'key7': {'3': 1}, 'key9': {'2': 1}, 'key10': {'2': 1}, 'key11': {'3': 1}, 'key13': {'2': 1}, 'key15': {'3': 1}, 'key17': {'2': 1}, 'key23': {'3': 1}, 'key26': {'2': 1}}}
+ client req_id:27 > 3 > kvs.put key27 <- 27
+ client req_id:27 {'message': 'Key store successfully', 'causal-metadata': {'key0': {'2': 1}, 'key2': {'2': 1}, 'key3': {'3': 1}, 'key5': {'2': 1}, 'key7': {'3': 1}, 'key9': {'2': 1}, 'key10': {'2': 1}, 'key11': {'3': 1}, 'key13': {'2': 1}, 'key15': {'3': 1}, 'key17': {'2': 1}, 'key23': {'3': 1}, 'key26': {'2': 1}, 'key27': {'3': 1}}}
+ client req_id:28 > 0 > kvs.put key28 <- 28
+ client req_id:28 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}, 'key6': {'0': 1}, 'key8': {'0': 1}, 'key12': {'0': 1}, 'key14': {'0': 1}, 'key16': {'0': 1}, 'key18': {'0': 1}, 'key19': {'0': 1}, 'key20': {'0': 1}, 'key21': {'1': 1}, 'key22': {'0': 1}, 'key24': {'0': 1}, 'key25': {'1': 1}, 'key28': {'0': 1}}}
+ client req_id:29 > 1 > kvs.put key29 <- 29
+ client req_id:29 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}, 'key6': {'0': 1}, 'key8': {'0': 1}, 'key12': {'0': 1}, 'key14': {'0': 1}, 'key16': {'0': 1}, 'key18': {'0': 1}, 'key19': {'0': 1}, 'key20': {'0': 1}, 'key21': {'1': 1}, 'key22': {'0': 1}, 'key24': {'0': 1}, 'key25': {'1': 1}, 'key28': {'0': 1}, 'key29': {'1': 1}}}
+ client req_id:30 > 2 > kvs.put key30 <- 30
+ client req_id:30 {'message': 'Key store successfully', 'causal-metadata': {'key0': {'2': 1}, 'key2': {'2': 1}, 'key3': {'3': 1}, 'key5': {'2': 1}, 'key7': {'3': 1}, 'key9': {'2': 1}, 'key10': {'2': 1}, 'key11': {'3': 1}, 'key13': {'2': 1}, 'key15': {'3': 1}, 'key17': {'2': 1}, 'key23': {'3': 1}, 'key26': {'2': 1}, 'key27': {'3': 1}, 'key30': {'2': 1}}}
+ client req_id:31 > 3 > kvs.put key31 <- 31
+ client req_id:31 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}, 'key6': {'0': 1}, 'key8': {'0': 1}, 'key12': {'0': 1}, 'key14': {'0': 1}, 'key16': {'0': 1}, 'key18': {'0': 1}, 'key19': {'0': 1}, 'key20': {'0': 1}, 'key21': {'1': 1}, 'key22': {'0': 1}, 'key24': {'0': 1}, 'key25': {'1': 1}, 'key28': {'0': 1}, 'key29': {'1': 1}, 'key31': {'0': 1}}}
+ client req_id:32 > 0 > kvs.put key32 <- 32
+ client req_id:32 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}, 'key6': {'0': 1}, 'key8': {'0': 1}, 'key12': {'0': 1}, 'key14': {'0': 1}, 'key16': {'0': 1}, 'key18': {'0': 1}, 'key19': {'0': 1}, 'key20': {'0': 1}, 'key21': {'1': 1}, 'key22': {'0': 1}, 'key24': {'0': 1}, 'key25': {'1': 1}, 'key28': {'0': 1}, 'key29': {'1': 1}, 'key31': {'0': 1}, 'key32': {'0': 1}}}
+ client req_id:33 > 1 > kvs.put key33 <- 33
+ client req_id:33 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}, 'key6': {'0': 1}, 'key8': {'0': 1}, 'key12': {'0': 1}, 'key14': {'0': 1}, 'key16': {'0': 1}, 'key18': {'0': 1}, 'key19': {'0': 1}, 'key20': {'0': 1}, 'key21': {'1': 1}, 'key22': {'0': 1}, 'key24': {'0': 1}, 'key25': {'1': 1}, 'key28': {'0': 1}, 'key29': {'1': 1}, 'key31': {'0': 1}, 'key32': {'0': 1}, 'key33': {'1': 1}}}
+ client req_id:34 > 2 > kvs.put key34 <- 34
+ client req_id:34 {'message': 'Key store successfully', 'causal-metadata': {'key0': {'2': 1}, 'key2': {'2': 1}, 'key3': {'3': 1}, 'key5': {'2': 1}, 'key7': {'3': 1}, 'key9': {'2': 1}, 'key10': {'2': 1}, 'key11': {'3': 1}, 'key13': {'2': 1}, 'key15': {'3': 1}, 'key17': {'2': 1}, 'key23': {'3': 1}, 'key26': {'2': 1}, 'key27': {'3': 1}, 'key30': {'2': 1}, 'key34': {'2': 1}}}
+ client req_id:35 > 3 > kvs.put key35 <- 35
+ client req_id:35 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}, 'key6': {'0': 1}, 'key8': {'0': 1}, 'key12': {'0': 1}, 'key14': {'0': 1}, 'key16': {'0': 1}, 'key18': {'0': 1}, 'key19': {'0': 1}, 'key20': {'0': 1}, 'key21': {'1': 1}, 'key22': {'0': 1}, 'key24': {'0': 1}, 'key25': {'1': 1}, 'key28': {'0': 1}, 'key29': {'1': 1}, 'key31': {'0': 1}, 'key32': {'0': 1}, 'key33': {'1': 1}, 'key35': {'0': 1}}}
+ client req_id:36 > 0 > kvs.put key36 <- 36
+ client req_id:36 {'message': 'Key store successfully', 'causal-metadata': {'key0': {'2': 1}, 'key2': {'2': 1}, 'key3': {'3': 1}, 'key5': {'2': 1}, 'key7': {'3': 1}, 'key9': {'2': 1}, 'key10': {'2': 1}, 'key11': {'3': 1}, 'key13': {'2': 1}, 'key15': {'3': 1}, 'key17': {'2': 1}, 'key23': {'3': 1}, 'key26': {'2': 1}, 'key27': {'3': 1}, 'key30': {'2': 1}, 'key34': {'2': 1}, 'key36': {'2': 1}}}
+ client req_id:37 > 1 > kvs.put key37 <- 37
+ client req_id:37 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}, 'key6': {'0': 1}, 'key8': {'0': 1}, 'key12': {'0': 1}, 'key14': {'0': 1}, 'key16': {'0': 1}, 'key18': {'0': 1}, 'key19': {'0': 1}, 'key20': {'0': 1}, 'key21': {'1': 1}, 'key22': {'0': 1}, 'key24': {'0': 1}, 'key25': {'1': 1}, 'key28': {'0': 1}, 'key29': {'1': 1}, 'key31': {'0': 1}, 'key32': {'0': 1}, 'key33': {'1': 1}, 'key35': {'0': 1}, 'key37': {'1': 1}}}
+ client req_id:38 > 2 > kvs.put key38 <- 38
+ client req_id:38 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}, 'key6': {'0': 1}, 'key8': {'0': 1}, 'key12': {'0': 1}, 'key14': {'0': 1}, 'key16': {'0': 1}, 'key18': {'0': 1}, 'key19': {'0': 1}, 'key20': {'0': 1}, 'key21': {'1': 1}, 'key22': {'0': 1}, 'key24': {'0': 1}, 'key25': {'1': 1}, 'key28': {'0': 1}, 'key29': {'1': 1}, 'key31': {'0': 1}, 'key32': {'0': 1}, 'key33': {'1': 1}, 'key35': {'0': 1}, 'key37': {'1': 1}, 'key38': {'0': 1}}}
+ client req_id:39 > 3 > kvs.put key39 <- 39
+ client req_id:39 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}, 'key6': {'0': 1}, 'key8': {'0': 1}, 'key12': {'0': 1}, 'key14': {'0': 1}, 'key16': {'0': 1}, 'key18': {'0': 1}, 'key19': {'0': 1}, 'key20': {'0': 1}, 'key21': {'1': 1}, 'key22': {'0': 1}, 'key24': {'0': 1}, 'key25': {'1': 1}, 'key28': {'0': 1}, 'key29': {'1': 1}, 'key31': {'0': 1}, 'key32': {'0': 1}, 'key33': {'1': 1}, 'key35': {'0': 1}, 'key37': {'1': 1}, 'key38': {'0': 1}, 'key39': {'0': 1}}}
+ client req_id:40 > 0 > kvs.put key40 <- 40
+ client req_id:40 {'message': 'Key store successfully', 'causal-metadata': {'key0': {'2': 1}, 'key2': {'2': 1}, 'key3': {'3': 1}, 'key5': {'2': 1}, 'key7': {'3': 1}, 'key9': {'2': 1}, 'key10': {'2': 1}, 'key11': {'3': 1}, 'key13': {'2': 1}, 'key15': {'3': 1}, 'key17': {'2': 1}, 'key23': {'3': 1}, 'key26': {'2': 1}, 'key27': {'3': 1}, 'key30': {'2': 1}, 'key34': {'2': 1}, 'key36': {'2': 1}, 'key40': {'2': 1}}}
+ client req_id:41 > 1 > kvs.put key41 <- 41
+ client req_id:41 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}, 'key6': {'0': 1}, 'key8': {'0': 1}, 'key12': {'0': 1}, 'key14': {'0': 1}, 'key16': {'0': 1}, 'key18': {'0': 1}, 'key19': {'0': 1}, 'key20': {'0': 1}, 'key21': {'1': 1}, 'key22': {'0': 1}, 'key24': {'0': 1}, 'key25': {'1': 1}, 'key28': {'0': 1}, 'key29': {'1': 1}, 'key31': {'0': 1}, 'key32': {'0': 1}, 'key33': {'1': 1}, 'key35': {'0': 1}, 'key37': {'1': 1}, 'key38': {'0': 1}, 'key39': {'0': 1}, 'key41': {'1': 1}}}
+ client req_id:42 > 2 > kvs.put key42 <- 42
+ client req_id:42 {'message': 'Key store successfully', 'causal-metadata': {'key0': {'2': 1}, 'key2': {'2': 1}, 'key3': {'3': 1}, 'key5': {'2': 1}, 'key7': {'3': 1}, 'key9': {'2': 1}, 'key10': {'2': 1}, 'key11': {'3': 1}, 'key13': {'2': 1}, 'key15': {'3': 1}, 'key17': {'2': 1}, 'key23': {'3': 1}, 'key26': {'2': 1}, 'key27': {'3': 1}, 'key30': {'2': 1}, 'key34': {'2': 1}, 'key36': {'2': 1}, 'key40': {'2': 1}, 'key42': {'2': 1}}}
+ client req_id:43 > 3 > kvs.put key43 <- 43
+ client req_id:43 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}, 'key6': {'0': 1}, 'key8': {'0': 1}, 'key12': {'0': 1}, 'key14': {'0': 1}, 'key16': {'0': 1}, 'key18': {'0': 1}, 'key19': {'0': 1}, 'key20': {'0': 1}, 'key21': {'1': 1}, 'key22': {'0': 1}, 'key24': {'0': 1}, 'key25': {'1': 1}, 'key28': {'0': 1}, 'key29': {'1': 1}, 'key31': {'0': 1}, 'key32': {'0': 1}, 'key33': {'1': 1}, 'key35': {'0': 1}, 'key37': {'1': 1}, 'key38': {'0': 1}, 'key39': {'0': 1}, 'key41': {'1': 1}, 'key43': {'0': 1}}}
+ client req_id:44 > 0 > kvs.put key44 <- 44
+ client req_id:44 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}, 'key6': {'0': 1}, 'key8': {'0': 1}, 'key12': {'0': 1}, 'key14': {'0': 1}, 'key16': {'0': 1}, 'key18': {'0': 1}, 'key19': {'0': 1}, 'key20': {'0': 1}, 'key21': {'1': 1}, 'key22': {'0': 1}, 'key24': {'0': 1}, 'key25': {'1': 1}, 'key28': {'0': 1}, 'key29': {'1': 1}, 'key31': {'0': 1}, 'key32': {'0': 1}, 'key33': {'1': 1}, 'key35': {'0': 1}, 'key37': {'1': 1}, 'key38': {'0': 1}, 'key39': {'0': 1}, 'key41': {'1': 1}, 'key43': {'0': 1}, 'key44': {'0': 1}}}
+ client req_id:45 > 1 > kvs.put key45 <- 45
+ client req_id:45 {'message': 'Key store successfully', 'causal-metadata': {'key0': {'2': 1}, 'key2': {'2': 1}, 'key3': {'3': 1}, 'key5': {'2': 1}, 'key7': {'3': 1}, 'key9': {'2': 1}, 'key10': {'2': 1}, 'key11': {'3': 1}, 'key13': {'2': 1}, 'key15': {'3': 1}, 'key17': {'2': 1}, 'key23': {'3': 1}, 'key26': {'2': 1}, 'key27': {'3': 1}, 'key30': {'2': 1}, 'key34': {'2': 1}, 'key36': {'2': 1}, 'key40': {'2': 1}, 'key42': {'2': 1}, 'key45': {'2': 1}}}
+ client req_id:46 > 2 > kvs.put key46 <- 46
+ client req_id:46 {'message': 'Key store successfully', 'causal-metadata': {'key0': {'2': 1}, 'key2': {'2': 1}, 'key3': {'3': 1}, 'key5': {'2': 1}, 'key7': {'3': 1}, 'key9': {'2': 1}, 'key10': {'2': 1}, 'key11': {'3': 1}, 'key13': {'2': 1}, 'key15': {'3': 1}, 'key17': {'2': 1}, 'key23': {'3': 1}, 'key26': {'2': 1}, 'key27': {'3': 1}, 'key30': {'2': 1}, 'key34': {'2': 1}, 'key36': {'2': 1}, 'key40': {'2': 1}, 'key42': {'2': 1}, 'key45': {'2': 1}, 'key46': {'2': 1}}}
+ client req_id:47 > 3 > kvs.put key47 <- 47
+ client req_id:47 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}, 'key6': {'0': 1}, 'key8': {'0': 1}, 'key12': {'0': 1}, 'key14': {'0': 1}, 'key16': {'0': 1}, 'key18': {'0': 1}, 'key19': {'0': 1}, 'key20': {'0': 1}, 'key21': {'1': 1}, 'key22': {'0': 1}, 'key24': {'0': 1}, 'key25': {'1': 1}, 'key28': {'0': 1}, 'key29': {'1': 1}, 'key31': {'0': 1}, 'key32': {'0': 1}, 'key33': {'1': 1}, 'key35': {'0': 1}, 'key37': {'1': 1}, 'key38': {'0': 1}, 'key39': {'0': 1}, 'key41': {'1': 1}, 'key43': {'0': 1}, 'key44': {'0': 1}, 'key47': {'0': 1}}}
+ client req_id:48 > 0 > kvs.put key48 <- 48
+ client req_id:48 {'message': 'Key store successfully', 'causal-metadata': {'key1': {'1': 1}, 'key4': {'0': 1}, 'key6': {'0': 1}, 'key8': {'0': 1}, 'key12': {'0': 1}, 'key14': {'0': 1}, 'key16': {'0': 1}, 'key18': {'0': 1}, 'key19': {'0': 1}, 'key20': {'0': 1}, 'key21': {'1': 1}, 'key22': {'0': 1}, 'key24': {'0': 1}, 'key25': {'1': 1}, 'key28': {'0': 1}, 'key29': {'1': 1}, 'key31': {'0': 1}, 'key32': {'0': 1}, 'key33': {'1': 1}, 'key35': {'0': 1}, 'key37': {'1': 1}, 'key38': {'0': 1}, 'key39': {'0': 1}, 'key41': {'1': 1}, 'key43': {'0': 1}, 'key44': {'0': 1}, 'key47': {'0': 1}, 'key48': {'0': 1}}}
+ client req_id:49 > 1 > kvs.put key49 <- 49
+ client req_id:49 {'message': 'Key store successfully', 'causal-metadata': {'key0': {'2': 1}, 'key2': {'2': 1}, 'key3': {'3': 1}, 'key5': {'2': 1}, 'key7': {'3': 1}, 'key9': {'2': 1}, 'key10': {'2': 1}, 'key11': {'3': 1}, 'key13': {'2': 1}, 'key15': {'3': 1}, 'key17': {'2': 1}, 'key23': {'3': 1}, 'key26': {'2': 1}, 'key27': {'3': 1}, 'key30': {'2': 1}, 'key34': {'2': 1}, 'key36': {'2': 1}, 'key40': {'2': 1}, 'key42': {'2': 1}, 'key45': {'2': 1}, 'key46': {'2': 1}, 'key49': {'2': 1}}}
+dumping logs of kvs containers
+Dumping logs for container kvs_0_node_3 to file /Users/chanwoopark/dev/ucsc/cse138/cse138_assignment4/test_results/2025_03_14_18:16:32/basic/basic_proxy_partitioned_shards/kvs_0_node_3.log
+Successfully wrote logs for container kvs_0_node_3 to /Users/chanwoopark/dev/ucsc/cse138/cse138_assignment4/test_results/2025_03_14_18:16:32/basic/basic_proxy_partitioned_shards/kvs_0_node_3.log
+Dumping logs for container kvs_0_node_2 to file /Users/chanwoopark/dev/ucsc/cse138/cse138_assignment4/test_results/2025_03_14_18:16:32/basic/basic_proxy_partitioned_shards/kvs_0_node_2.log
+Successfully wrote logs for container kvs_0_node_2 to /Users/chanwoopark/dev/ucsc/cse138/cse138_assignment4/test_results/2025_03_14_18:16:32/basic/basic_proxy_partitioned_shards/kvs_0_node_2.log
+Dumping logs for container kvs_0_node_1 to file /Users/chanwoopark/dev/ucsc/cse138/cse138_assignment4/test_results/2025_03_14_18:16:32/basic/basic_proxy_partitioned_shards/kvs_0_node_1.log
+Successfully wrote logs for container kvs_0_node_1 to /Users/chanwoopark/dev/ucsc/cse138/cse138_assignment4/test_results/2025_03_14_18:16:32/basic/basic_proxy_partitioned_shards/kvs_0_node_1.log
+Dumping logs for container kvs_0_node_0 to file /Users/chanwoopark/dev/ucsc/cse138/cse138_assignment4/test_results/2025_03_14_18:16:32/basic/basic_proxy_partitioned_shards/kvs_0_node_0.log
+Successfully wrote logs for container kvs_0_node_0 to /Users/chanwoopark/dev/ucsc/cse138/cse138_assignment4/test_results/2025_03_14_18:16:32/basic/basic_proxy_partitioned_shards/kvs_0_node_0.log
+
+> DESTROY CLUSTER
+cleaning up group 0
+  cleaning up group containers
+removing containers ['kvs_0_node_3', 'kvs_0_node_2', 'kvs_0_node_1', 'kvs_0_node_0']
+  cleaning up group networks
+removing network kvs_0_net_base
+removing network kvs_0_net_secondshard
+
+
+✓ PASSED basic_proxy_partitioned_shards
